@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Konskuy - Bimbingan Konseling Online (Offline)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .active-nav {
+            color: #16a34a; /* green-600 */
+            font-weight: 600;
+            border-bottom: 2px solid #16a34a;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .view-content {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .article-content h4 {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 600; /* font-semibold */
+            color: #059669; /* green-600 */
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Container Utama -->
+    <div id="app" class="min-h-screen flex flex-col">
+
+        <!-- Header / Navbar -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center">
+                        <i data-lucide="messages-square" class="h-8 w-8 text-green-600"></i>
+                        <span class="ml-2 text-2xl font-bold text-gray-800">Konskuy</span>
+                    </div>
+                    
+                    <!-- Navigasi Utama (HANYA MUNCUL SETELAH LOGIN) -->
+                    <nav id="main-nav" class="hidden items-center space-x-8">
+                        <a href="#" onclick="showView('home-view', this)" class="nav-link text-gray-600 hover:text-green-600 transition-colors active-nav">Beranda</a>
+                        <a href="#" onclick="showView('schedule-view', this)" class="nav-link text-gray-600 hover:text-green-600 transition-colors">Janji Temu</a>
+                        <a href="#" onclick="showView('motivation-view', this)" class="nav-link text-gray-600 hover:text-green-600 transition-colors">Materi Motivasi</a>
+                        <!-- Link Admin hanya terlihat jika Admin log in -->
+                        <a href="#" id="admin-dashboard-link" onclick="showView('admin-dashboard-view', this)" class="nav-link text-gray-600 hover:text-green-600 transition-colors hidden">Dasbor Admin</a>
+                    </nav>
+                    
+                    <!-- Tombol Autentikasi (HANYA MUNCUL SEBELUM LOGIN) -->
+                    <div id="auth-buttons" class="flex items-center space-x-2">
+                        <button onclick="showView('login-student-view', this, true)" class="hidden md:inline-block text-sm font-medium text-gray-600 hover:text-green-600 px-3 py-2 rounded-md">Login Siswa</button>
+                        <button onclick="showView('login-view', this, true)" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition-transform transform hover:scale-105 shadow">Login Admin</button>
+                    </div>
+                    
+                    <!-- Info Pengguna (HANYA MUNCUL SETELAH LOGIN) -->
+                    <div id="user-info" class="hidden items-center space-x-3">
+                         <span id="user-id-display" class="text-sm font-semibold text-gray-700"></span>
+                         <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-600 transition-colors shadow">Logout</button>
+                    </div>
+                    
+                     <!-- Mobile Menu Button -->
+                    <div class="md:hidden">
+                        <button id="mobile-menu-button" class="text-gray-600 hover:text-green-600">
+                            <i data-lucide="menu" class="h-6 w-6"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+             <!-- Mobile Menu -->
+            <div id="mobile-menu" class="md:hidden hidden bg-white border-t border-gray-200">
+                <!-- Mobile menu content will be generated by JS -->
+            </div>
+        </header>
+
+        <!-- Konten Utama (Halaman dinamis) -->
+        <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            
+            <!-- 1. Beranda (Home) -->
+            <div id="home-view" class="view-content">
+                <div class="bg-white p-8 rounded-xl shadow-md text-center">
+                    <h1 class="text-4xl font-bold text-green-600 mb-4">Selamat Datang di Konskuy!</h1>
+                    <p class="text-lg text-gray-600 max-w-2xl mx-auto mb-8">Solusi bimbingan konseling untuk siswa. Kami siap membantu Anda menemukan solusi, mendapatkan motivasi, dan merencanakan masa depan dengan lebih baik.</p>
+                    
+                    <!-- Area Aksi (Akan disembunyikan jika belum login atau Admin login) -->
+                    <div id="home-action-area">
+                        <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-12">
+                            <button onclick="showView('schedule-view', document.querySelector('#main-nav a[onclick*=\'schedule-view\']'))" class="w-full md:w-auto bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+                                <i data-lucide="calendar-plus"></i>
+                                Buat Janji Temu
+                            </button>
+                            <button onclick="showView('motivation-view', document.querySelector('#main-nav a[onclick*=\'motivation-view\']'))" class="w-full md:w-auto bg-white border border-green-600 text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-green-50 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+                                <i data-lucide="sparkles"></i>
+                                Lihat Materi Motivasi
+                            </button>
+                        </div>
+                        <h2 class="text-2xl font-bold text-center mb-6">Butuh Respon Cepat? Chat Privat Sekarang!</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                            <!-- Link Chat (WhatsApp) - HANYA untuk Siswa -->
+                            <div class="bg-gray-50 p-6 rounded-xl shadow-inner flex flex-col items-center text-center">
+                                <img src="https://placehold.co/100x100/E2E8F0/4A5568?text=Foto" alt="Foto Pak Gofar" class="w-24 h-24 rounded-full mb-4 border-4 border-gray-200">
+                                <h3 class="text-xl font-semibold mb-1">Pak Gofar</h3>
+                                <p class="text-gray-500 mb-4">Guru Bimbingan Konseling</p>
+                                <button onclick="window.open('https://wa.me/6283147559807', '_blank')" class="w-full bg-green-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-green-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+                                    <i data-lucide="message-circle"></i>
+                                    Chat via WhatsApp
+                                </button>
+                            </div>
+                            <div class="bg-gray-50 p-6 rounded-xl shadow-inner flex flex-col items-center text-center">
+                                <img src="https://placehold.co/100x100/E2E8F0/4A5568?text=Foto" alt="Foto Pak Rohman" class="w-24 h-24 rounded-full mb-4 border-4 border-gray-200">
+                                <h3 class="text-xl font-semibold mb-1">Pak Rohman</h3>
+                                <p class="text-gray-500 mb-4">Guru Bimbingan Konseling</p>
+                                <button onclick="window.open('https://wa.me/6281388464385', '_blank')" class="w-full bg-green-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-green-700 transition-transform transform hover:scale-105 flex items-center justify-center gap-2">
+                                    <i data-lucide="message-circle"></i>
+                                    Chat via WhatsApp
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Area Login (Akan ditampilkan jika belum login) -->
+                    <div id="home-login-prompt" class="hidden">
+                         <p class="text-xl text-red-500 font-semibold mb-8">Fitur Janji Temu dan Materi hanya dapat diakses setelah Anda login.</p>
+                         <div class="flex flex-col md:flex-row justify-center gap-4 max-w-lg mx-auto">
+                            <button onclick="showView('login-student-view', this, true)" class="w-full bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-transform transform hover:scale-105 shadow flex items-center justify-center gap-2">
+                                <i data-lucide="user-check"></i>
+                                Login Siswa
+                            </button>
+                             <button onclick="showView('login-view', this, true)" class="w-full bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition-transform transform hover:scale-105 shadow flex items-center justify-center gap-2">
+                                <i data-lucide="user-cog"></i>
+                                Login Admin
+                            </button>
+                         </div>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <!-- 2. Janji Temu BK (Schedule) - Siswa & Admin -->
+            <div id="schedule-view" class="view-content hidden">
+                <div class="bg-white p-8 rounded-xl shadow-md">
+                    <h2 class="text-3xl font-bold text-center mb-2">Jadwal Konseling</h2>
+                    <p class="text-gray-600 text-center mb-6">Pilih **kategori**, **guru**, dan tanggal, lalu pilih jadwal yang tersedia. Sesi tersedia dari jam 06:30 - 14:30.</p>
+                    <div class="max-w-xl mx-auto mb-8 grid grid-cols-1 sm:grid-cols-3 gap-4 justify-center items-end">
+                        <!-- Pilihan Kategori Konseling -->
+                        <div class="w-full">
+                            <label for="counseling-category" class="block text-sm font-medium text-gray-700 mb-1">Kategori Konseling</label>
+                            <select id="counseling-category" name="counseling-category" onchange="selectionChanged()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white" required>
+                                <option value="" disabled selected>-- Pilih --</option>
+                                <option value="Pendidikan">1. Pendidikan</option>
+                                <option value="Karir">2. Karir</option>
+                                <option value="Keluarga">3. Keluarga</option>
+                                <option value="Pertemanan">4. Pertemanan</option>
+                                <option value="Pasangan/Pergaulan">5. Pasangan/Pergaulan</option>
+                            </select>
+                        </div>
+                         <!-- Pilihan Guru -->
+                        <div class="w-full">
+                            <label for="counseling-teacher" class="block text-sm font-medium text-gray-700 mb-1">Pilih Guru BK</label>
+                            <select id="counseling-teacher" name="counseling-teacher" onchange="selectionChanged()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white" required>
+                                <option value="" disabled selected>-- Pilih --</option>
+                                <option value="Pak Gofar">1. Pak Gofar</option>
+                                <option value="Pak Rohman">2. Pak Rohman</option>
+                            </select>
+                        </div>
+                        <!-- Date Selection -->
+                        <div class="w-full">
+                            <label for="counseling-date" class="block text-sm font-medium text-gray-700 mb-1">Pilih Tanggal</label>
+                            <input type="date" id="counseling-date" name="counseling-date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                    </div>
+                    <div id="schedule-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        <p class="text-center col-span-full text-gray-500">Silakan pilih kategori, guru, dan tanggal di atas.</p>
+                        <!-- Jadwal akan digenerate oleh JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Materi Motivasi (Motivation) - Siswa & Admin -->
+            <div id="motivation-view" class="view-content hidden">
+                 <h2 class="text-3xl font-bold text-center mb-8">Materi Motivasi & Pengembangan Diri</h2>
+                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Artikel 1 -->
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden transform hover:-translate-y-2 transition-transform duration-300">
+                        <img src="https://placehold.co/600x400/34D399/FFFFFF?text=Motivasi" alt="Gambar Motivasi" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold mb-2">5 Cara Efektif Mengatasi Stres Jelang Ujian</h3>
+                            <p class="text-gray-600 mb-4">Jangan biarkan stres menghalangi kesuksesanmu. Pelajari teknik relaksasi dan manajemen waktu yang terbukti ampuh.</p>
+                            <button onclick="showMotivation('stres')" class="font-semibold text-green-600 hover:text-green-700 flex items-center gap-1">Baca Selengkapnya <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <!-- Artikel 2 -->
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden transform hover:-translate-y-2 transition-transform duration-300">
+                        <img src="https://placehold.co/600x400/60A5FA/FFFFFF?text=Percaya+Diri" alt="Gambar Percaya Diri" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold mb-2">Membangun Rasa Percaya Diri yang Kuat</h3>
+                            <p class="text-gray-600 mb-4">Percaya diri adalah kunci. Temukan cara untuk mengenali potensimu dan tampil berani di setiap kesempatan.</p>
+                            <button onclick="showMotivation('percaya_diri')" class="font-semibold text-green-600 hover:text-green-700 flex items-center gap-1">Baca Selengkapnya <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <!-- Artikel 3 -->
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden transform hover:-translate-y-2 transition-transform duration-300">
+                        <img src="https://placehold.co/600x400/FBBF24/FFFFFF?text=Masa+Depan" alt="Gambar Masa Depan" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold mb-2">Menentukan Jurusan Kuliah? Ini Tipsnya!</h3>
+                            <p class="text-gray-600 mb-4">Masih bingung memilih jurusan? Ikuti panduan ini untuk menemukan pilihan yang paling sesuai dengan minat dan bakatmu.</p>
+                            <button onclick="showMotivation('jurusan_kuliah')" class="font-semibold text-green-600 hover:text-green-700 flex items-center gap-1">Baca Selengkapnya <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                 </div>
+            </div>
+
+            <!-- 4. Login Admin -->
+            <div id="login-view" class="view-content hidden">
+                <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-2xl border-t-4 border-green-600">
+                    <h2 class="text-3xl font-bold text-center mb-2 text-gray-800">Portal Admin</h2>
+                    <p class="text-center text-gray-500 mb-6">Masuk untuk melihat janji temu yang dijadwalkan.</p>
+                    <form id="login-form">
+                        <div class="mb-4">
+                            <label for="admin-id" class="block text-sm font-medium text-gray-700 mb-1">Admin ID</label>
+                            <input type="text" id="admin-id" name="admin-id" placeholder="e.g., bk_gofar" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                        </div>
+                        <div class="mb-6">
+                            <label for="admin-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="admin-password" name="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                        </div>
+                        <button type="submit" class="w-full bg-green-600 text-white py-2.5 rounded-lg font-semibold hover:bg-green-700 transition-colors">Login Admin</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 5. Login Siswa -->
+            <div id="login-student-view" class="view-content hidden">
+                <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-2xl border-t-4 border-green-600">
+                    <h2 class="text-3xl font-bold text-center mb-6 text-gray-800">Login Siswa</h2>
+                    <p class="text-center text-gray-500 mb-6">Gunakan ID dan Password yang diberikan oleh Admin BK.</p>
+                    <form id="login-student-form">
+                        <div class="mb-4">
+                            <label for="student-id-login" class="block text-sm font-medium text-gray-700 mb-1">ID Siswa</label>
+                            <input type="text" id="student-id-login" name="student-id" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                        </div>
+                        <div class="mb-6">
+                            <label for="student-password-login" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input type="password" id="student-password-login" name="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                        </div>
+                        <button type="submit" class="w-full bg-green-600 text-white py-2.5 rounded-lg font-semibold hover:bg-green-700 transition-colors">Login Siswa</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 6. Dasbor Admin - Admin Only -->
+            <div id="admin-dashboard-view" class="view-content hidden">
+                 
+                 <!-- Bagian Kelola Akun Siswa -->
+                 <div class="bg-white p-8 rounded-xl shadow-md mb-8">
+                    <h2 class="text-3xl font-bold mb-6 text-gray-800">Kelola Akun Siswa</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Form Tambah Siswa -->
+                        <div class="p-6 border border-gray-200 rounded-xl bg-gray-50">
+                            <h3 class="text-xl font-semibold mb-4 text-green-700">Tambah Akun Siswa Baru</h3>
+                            <form id="add-student-form">
+                                <div class="mb-4">
+                                    <label for="new-student-id" class="block text-sm font-medium text-gray-700 mb-1">ID Siswa Baru</label>
+                                    <input type="text" id="new-student-id" name="new-student-id" placeholder="e.g., 123456" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="new-student-password" class="block text-sm font-medium text-gray-700 mb-1">Password Awal</label>
+                                    <input type="text" id="new-student-password" name="new-student-password" placeholder="e.g., pass123" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                                </div>
+                                <button type="submit" class="w-full bg-green-600 text-white py-2.5 rounded-lg font-semibold hover:bg-green-700 transition-colors">Buat Akun Siswa</button>
+                            </form>
+                        </div>
+                        
+                        <!-- Daftar Akun Siswa -->
+                        <div class="p-6 border border-gray-200 rounded-xl bg-gray-50">
+                            <h3 id="student-list-title" class="text-xl font-semibold mb-4 text-green-700">Daftar Siswa Terdaftar (0 Akun)</h3>
+                            <div id="student-list" class="max-h-64 overflow-y-auto pr-2">
+                                <!-- Student list generated by JS -->
+                            </div>
+                            <p id="no-students" class="text-center text-gray-500 mt-4 hidden">Belum ada akun siswa terdaftar.</p>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- Bagian Dasbor Janji Temu -->
+                 <div class="bg-white p-8 rounded-xl shadow-md">
+                    <h2 class="text-3xl font-bold mb-6 text-gray-800">Dasbor Janji Temu</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border rounded-lg overflow-hidden">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="py-3 px-4 border-b text-center text-sm font-semibold text-gray-600 w-12">No.</th>
+                                    <th class="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600">ID Siswa</th>
+                                    <th class="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600">Kategori</th>
+                                    <th class="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600">Guru BK</th>
+                                    <th class="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600">Tanggal</th>
+                                    <th class="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600">Waktu</th>
+                                    <th class="py-3 px-4 border-b text-left text-sm font-semibold text-gray-600">Status</th>
+                                    <th class="py-3 px-4 border-b text-center text-sm font-semibold text-gray-600">Tindakan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="booking-list">
+                                <!-- Data booking akan dimasukkan di sini oleh JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <p id="no-bookings" class="hidden text-center text-gray-500 mt-6">Belum ada siswa yang melakukan booking.</p>
+                </div>
+            </div>
+
+
+        </main>
+        
+        <footer class="bg-white mt-12">
+            <div class="container mx-auto py-4 px-4 sm:px-6 lg:px-8 text-center text-gray-500">
+                <p>&copy; 2024 Aplikasi Konskuy. All rights reserved.</p>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Modal Konfirmasi Janji Temu -->
+    <div id="booking-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <h3 class="text-xl font-semibold mb-4">Konfirmasi Janji Temu</h3>
+            <p class="text-gray-600 mb-2">Anda yakin ingin memesan sesi konseling:</p>
+            <p class="text-gray-800 mb-1">Kategori: <strong id="modal-category" class="text-green-600"></strong></p>
+            <p class="text-gray-800 mb-4">Guru: <strong id="modal-teacher" class="text-green-600"></strong></p>
+            <p class="text-gray-600 mb-6">Pada tanggal <strong id="modal-date"></strong> pukul <strong id="modal-time"></strong>?</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancel-booking" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Batal</button>
+                <button id="confirm-booking" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Ya, Pesan</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Konten Motivasi -->
+    <div id="motivation-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto relative">
+            <button onclick="closeMotivationModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h3 id="motivation-modal-title" class="text-3xl font-bold text-green-700 mb-4 border-b pb-2">Judul Artikel</h3>
+            <div id="motivation-modal-content" class="text-gray-700 article-content">
+                <!-- Isi konten akan dimuat di sini -->
+            </div>
+            <div class="mt-6 text-center">
+                <button onclick="closeMotivationModal()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold">Tutup</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Reset Password Siswa -->
+    <div id="reset-password-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white p-6 rounded-xl shadow-xl max-w-sm w-full relative">
+            <button onclick="closeResetPasswordModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h3 class="text-2xl font-bold mb-4 text-gray-800">Reset Password Siswa</h3>
+            <p class="text-gray-600 mb-4">Reset password untuk ID Siswa: <strong id="reset-student-id" class="text-green-600"></strong></p>
+            
+            <form id="reset-password-form">
+                <div class="mb-4">
+                    <label for="new-student-password-reset" class="block text-sm font-medium text-gray-700 mb-1">Password Baru</label>
+                    <input type="text" id="new-student-password-reset" name="new-password" placeholder="Masukkan password baru" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                </div>
+                <button type="submit" class="w-full bg-red-500 text-white py-2.5 rounded-lg font-semibold hover:bg-red-600 transition-colors">Reset Password</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Custom Alert/Message Modal -->
+    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-xs w-full text-center">
+            <p id="modal-message" class="text-gray-800 mb-6 font-medium"></p>
+            <button id="close-message-modal" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Tutup</button>
+        </div>
+    </div>
+
+    <!-- Hapus semua impor dan inisialisasi Firebase -->
+    <script>
+        // --- State Management & Data Lokal ---
+        const APP_PREFIX = 'konskuy_'; // Prefix untuk kunci localStorage
+        
+        // Helper functions untuk localStorage
+        const getStoredData = (key) => {
+            const data = localStorage.getItem(APP_PREFIX + key);
+            return data ? JSON.parse(data) : [];
+        };
+
+        const setStoredData = (key, data) => {
+            localStorage.setItem(APP_PREFIX + key, JSON.stringify(data));
+        };
+
+        // Muat data dari localStorage saat aplikasi dimulai
+        let registeredStudents = getStoredData('students');
+        let bookedAppointments = getStoredData('appointments');
+
+        const registeredAdmins = [
+            { id: 'bk_gofar', password: 'gofar123', name: 'Pak Gofar' },
+            { id: 'bk_rohman', password: 'rohman123', name: 'Pak Rohman' }
+        ];
+        
+        let currentStudent = null;
+        let currentAdmin = null;
+        
+        let targetStudentId = null; 
+        
+        // --- Data Konten Motivasi (Tidak Berubah) ---
+        const motivationContents = {
+            'stres': {
+                title: "5 Cara Efektif Mengatasi Stres Jelang Ujian",
+                content: `<p class="mb-4">Menghadapi ujian seringkali membawa beban stres yang besar...</p><h4>1. Rencanakan dan Bagi Tugas (Chunking)</h4><p class="mb-4">Jangan mencoba belajar semua sekaligus...</p><h4>2. Prioritaskan Tidur Berkualitas</h4><p class="mb-4">Tidur 7-8 jam per malam adalah non-negotiable!...</p><h4>3. Teknik Pernapasan 4-7-8</h4><p class="mb-4">Saat merasa panik, coba teknik ini...</p><h4>4. Bergeraklah (Movement)</h4><p class="mb-4">Luangkan 30 menit sehari untuk aktivitas fisik ringan...</p><h4>5. Hindari Membandingkan Diri</h4><p class="mb-4">Fokus pada kemajuan diri sendiri...</p>`
+            },
+            'percaya_diri': {
+                title: "Membangun Rasa Percaya Diri yang Kuat",
+                content: `<p class="mb-4">Rasa percaya diri bukanlah sesuatu yang didapatkan secara instan...</p><h4>1. Latih Postur Tubuh</h4><p class="mb-4">Bahasa tubuh sangat memengaruhi cara Anda merasa...</p><h4>2. Kenali dan Rayakan Kemenangan Kecil (Small Wins)</h4><p class="mb-4">Buat daftar hal-hal yang telah Anda capai...</p><h4>3. Batasi 'Inner Critic' Negatif</h4><p class="mb-4">Setiap kali Anda mendengar suara di kepala yang mengatakan "Saya tidak bisa,"...</p><h4>4. Persiapan Adalah Kunci</h4><p class="mb-4">Rasa gugup sering muncul karena kurangnya persiapan...</p><h4>5. Ambil Risiko Kecil</h4><p class="mb-4">Sengaja melakukan sesuatu yang sedikit di luar zona nyaman Anda...</p>`
+            },
+            'jurusan_kuliah': {
+                title: "Menentukan Jurusan Kuliah? Ini Tipsnya!",
+                content: `<p class="mb-4">Memilih jurusan kuliah adalah keputusan besar...</p><h4>Pilar 1: Minat (Passion)</h4><p class="mb-4">Apa yang benar-benar Anda nikmati?...</p><h4>Pilar 2: Bakat (Aptitude)</h4><p class="mb-4">Apa yang Anda kuasai secara alami?...</p><h4>Pilar 3: Peluang Karir (Opportunity)</h4><p class="mb-4">Setelah lulus, apakah jurusan ini memiliki prospek kerja yang baik?...</p><h4>Tips Tambahan: Riset Mendalam</h4><p class="mb-4">Lakukan wawancara singkat (informational interview)...</p>`
+            }
+        };
+
+        // --- Elemen UI ---
+        const views = document.querySelectorAll('.view-content');
+        const adminDashboardLink = document.getElementById('admin-dashboard-link');
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const scheduleGrid = document.getElementById('schedule-grid');
+        const counselingDateInput = document.getElementById('counseling-date');
+        const counselingCategorySelect = document.getElementById('counseling-category');
+        const counselingTeacherSelect = document.getElementById('counseling-teacher');
+        const bookingModal = document.getElementById('booking-modal');
+        const motivationModal = document.getElementById('motivation-modal');
+        const motivationModalTitle = document.getElementById('motivation-modal-title');
+        const motivationModalContent = document.getElementById('motivation-modal-content');
+        const messageModal = document.getElementById('message-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const mainNav = document.getElementById('main-nav');
+        const homeActionArea = document.getElementById('home-action-area');
+        const homeLoginPrompt = document.getElementById('home-login-prompt');
+        const resetPasswordModal = document.getElementById('reset-password-modal');
+        const resetStudentIdDisplay = document.getElementById('reset-student-id');
+        const resetPasswordForm = document.getElementById('reset-password-form');
+        
+        let currentBookingButton = null;
+
+        // --- Fungsi Modal Pesan Kustom ---
+        function showMessage(message) {
+            modalMessage.innerHTML = message;
+            messageModal.classList.remove('hidden');
+        }
+        document.getElementById('close-message-modal').addEventListener('click', () => {
+            messageModal.classList.add('hidden');
+        });
+        messageModal.addEventListener('click', (e) => { 
+            if (e.target === messageModal) messageModal.classList.add('hidden'); 
+        });
+        
+        // --- Logika Modal Motivasi ---
+        function showMotivation(key) {
+            if (!currentStudent && !currentAdmin) {
+                showMessage('Anda harus login untuk melihat materi motivasi.');
+                return;
+            }
+            const article = motivationContents[key];
+            if (!article) {
+                showMessage('Artikel tidak ditemukan.');
+                return;
+            }
+            motivationModalTitle.textContent = article.title;
+            motivationModalContent.innerHTML = article.content;
+            motivationModal.classList.remove('hidden');
+            motivationModal.scrollTo(0, 0);
+        }
+        function closeMotivationModal() {
+            motivationModal.classList.add('hidden');
+        }
+        motivationModal.addEventListener('click', (e) => { 
+            if (e.target === motivationModal) closeMotivationModal(); 
+        });
+
+        // --- Logika Modal Reset Password Siswa ---
+        function openResetPasswordModal(studentId) {
+            targetStudentId = studentId;
+            resetStudentIdDisplay.textContent = studentId;
+            resetPasswordModal.classList.remove('hidden');
+            document.getElementById('new-student-password-reset').value = '';
+        }
+        function closeResetPasswordModal() {
+            resetPasswordModal.classList.add('hidden');
+            targetStudentId = null;
+        }
+        resetPasswordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!targetStudentId) return;
+            const newPassword = e.target['new-password'].value;
+            const studentIndex = registeredStudents.findIndex(s => s.id === targetStudentId);
+            if (studentIndex > -1) {
+                registeredStudents[studentIndex].password = newPassword;
+                setStoredData('students', registeredStudents);
+                closeResetPasswordModal();
+                showMessage(`Password untuk siswa **${targetStudentId}** berhasil direset.`);
+            } else {
+                showMessage("Gagal mereset password, siswa tidak ditemukan.");
+            }
+        });
+
+        // --- Logika Pergantian Halaman (View) & UI Update ---
+        function showView(viewId, clickedLink = null, isAuthLink = false) {
+            const requiresLogin = ['schedule-view', 'motivation-view', 'admin-dashboard-view'];
+            if (requiresLogin.includes(viewId) && !currentStudent && !currentAdmin) {
+                showMessage('Anda harus login untuk mengakses fitur ini.');
+                return;
+            }
+            if (viewId === 'admin-dashboard-view' && !currentAdmin) {
+                 showMessage('Akses ditolak. Halaman ini hanya untuk Administrator.');
+                 return;
+            }
+            if (viewId === 'schedule-view' && currentAdmin) {
+                 showMessage('Anda login sebagai Admin. Untuk melihat dan mengelola janji temu, silakan buka **Dasbor Admin**.');
+                 return;
+            }
+            views.forEach(view => view.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active-nav'));
+            if (clickedLink && !isAuthLink) {
+                clickedLink.classList.add('active-nav');
+            } else if (document.querySelector(`#main-nav a[onclick*='${viewId}']`)) {
+                document.querySelector(`#main-nav a[onclick*='${viewId}']`).classList.add('active-nav');
+            }
+            mobileMenu.classList.add('hidden');
+        }
+
+        function updateUI() {
+            const authButtons = document.getElementById('auth-buttons');
+            const userInfo = document.getElementById('user-info');
+            const userIdDisplay = document.getElementById('user-id-display');
+            adminDashboardLink.classList.add('hidden');
+            homeActionArea.classList.add('hidden');
+            if (currentStudent || currentAdmin) {
+                mainNav.classList.remove('hidden');
+                mainNav.classList.add('md:flex');
+                authButtons.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                homeLoginPrompt.classList.add('hidden');
+                if (currentStudent) {
+                    userIdDisplay.textContent = `Siswa: ${currentStudent}`;
+                    homeActionArea.classList.remove('hidden');
+                    showView('home-view', document.querySelector('#main-nav a[onclick*=\'home-view\']'));
+                } else if (currentAdmin) {
+                    userIdDisplay.textContent = `Admin: ${currentAdmin.name}`;
+                    adminDashboardLink.classList.remove('hidden');
+                    showView('admin-dashboard-view', adminDashboardLink);
+                }
+            } else { 
+                mainNav.classList.add('hidden');
+                mainNav.classList.remove('md:flex');
+                authButtons.classList.remove('hidden');
+                userInfo.classList.add('hidden');
+                homeActionArea.classList.add('hidden');
+                homeLoginPrompt.classList.remove('hidden');
+                showView('home-view');
+            }
+            updateMobileMenu();
+        }
+        
+        function updateMobileMenu() {
+            mobileMenu.innerHTML = '';
+            if (currentStudent || currentAdmin) {
+                const mainNavLinks = document.getElementById('main-nav').cloneNode(true);
+                mainNavLinks.querySelectorAll('a').forEach(link => {
+                    if (currentStudent && link.id === 'admin-dashboard-link') return;
+                    if (currentAdmin && link.href.includes('schedule-view')) return;
+                    link.className = 'block px-4 py-3 text-gray-600 hover:bg-gray-100 hover:text-green-600 transition-colors';
+                    mobileMenu.appendChild(link);
+                });
+                mobileMenu.innerHTML += `<button onclick="logout()" class="w-full text-left px-4 py-3 text-red-500 hover:bg-gray-100 font-semibold border-t">Logout</button>`;
+            } else {
+                 mobileMenu.innerHTML += `<a href="#" onclick="showView('login-student-view', this, true)" class="block px-4 py-3 text-gray-600 hover:bg-gray-100 hover:text-green-600 border-t">Login Siswa</a><a href="#" onclick="showView('login-view', this, true)" class="block px-4 py-3 text-gray-600 hover:bg-gray-100 hover:text-green-600">Login Admin</a>`;
+            }
+        }
+        
+        mobileMenuButton.addEventListener('click', () => { mobileMenu.classList.toggle('hidden'); });
+        
+        function selectionChanged() { generateTimeSlots(); }
+        const today = new Date().toISOString().split('T')[0];
+        counselingDateInput.setAttribute('min', today);
+        counselingDateInput.addEventListener('change', generateTimeSlots);
+
+        function generateTimeSlots() {
+             if (!currentStudent && !currentAdmin) {
+                scheduleGrid.innerHTML = '<p class="text-center col-span-full text-red-500 font-semibold">Anda harus login untuk melihat dan memesan jadwal.</p>';
+                return;
+            }
+             if (currentAdmin) {
+                 scheduleGrid.innerHTML = '<p class="text-center col-span-full text-blue-500 font-semibold">Anda login sebagai Admin. Untuk melihat dan mengelola janji temu, silakan buka **Dasbor Admin**.</p>';
+                 return;
+            }
+            scheduleGrid.innerHTML = '';
+            const selectedDate = counselingDateInput.value;
+            const selectedCategory = counselingCategorySelect.value;
+            const selectedTeacher = counselingTeacherSelect.value;
+            if (!selectedCategory || !selectedDate || !selectedTeacher) {
+                 scheduleGrid.innerHTML = '<p class="text-center col-span-full text-gray-500">Silakan pilih **kategori**, **guru**, dan **tanggal** untuk melihat jadwal.</p>';
+                 return;
+            }
+            const bookedTimesForTeacher = bookedAppointments
+                .filter(appt => appt.date === selectedDate && appt.teacher === selectedTeacher && appt.status !== 'Rejected')
+                .map(appt => appt.time);
+            const startTime = 6.5, endTime = 14.5, interval = 0.5;
+            let foundSlots = false;
+            for (let time = startTime; time <= endTime; time += interval) {
+                let hour = Math.floor(time);
+                let minute = (time % 1) * 60;
+                let timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                const button = document.createElement('button');
+                button.dataset.time = timeString;
+                const isBooked = bookedTimesForTeacher.includes(timeString);
+                if (isBooked) {
+                    button.textContent = 'Dibooking';
+                    button.disabled = true;
+                    button.className = "p-3 bg-red-500 text-white font-semibold rounded-lg cursor-not-allowed";
+                } else {
+                    foundSlots = true;
+                    button.textContent = timeString;
+                    button.className = "p-3 bg-green-100 text-green-800 font-semibold rounded-lg hover:bg-green-200 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500";
+                    if (currentStudent) { button.addEventListener('click', () => openBookingModal(button)); }
+                }
+                scheduleGrid.appendChild(button);
+            }
+             if (!foundSlots && selectedDate) {
+                scheduleGrid.innerHTML = '<p class="text-center col-span-full text-red-500 font-semibold">Tidak ada slot waktu tersedia pada tanggal ini.</p>';
+            }
+        }
+        
+        // --- Logika Booking & Modal ---
+        function openBookingModal(button) {
+            if (!currentStudent) {
+                showMessage('Anda harus login sebagai siswa untuk membuat janji temu.');
+                showView('login-student-view', null, true);
+                return;
+            }
+            const selectedCategory = counselingCategorySelect.value;
+            const selectedTeacher = counselingTeacherSelect.value;
+            if (!selectedCategory || !selectedTeacher) {
+                showMessage('Harap pilih kategori dan guru konseling terlebih dahulu.');
+                return;
+            }
+            const selectedDate = counselingDateInput.value;
+            const formattedDate = new Date(selectedDate).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            currentBookingButton = button;
+            document.getElementById('modal-category').textContent = selectedCategory;
+            document.getElementById('modal-teacher').textContent = selectedTeacher;
+            document.getElementById('modal-date').textContent = formattedDate;
+            document.getElementById('modal-time').textContent = button.dataset.time;
+            bookingModal.classList.remove('hidden');
+        }
+        function closeBookingModal() {
+            currentBookingButton = null;
+            bookingModal.classList.add('hidden');
+        }
+        function confirmBooking() {
+            if (currentBookingButton) {
+                const newAppointment = { 
+                    id: 'appt_' + Date.now(), // Buat ID unik
+                    studentId: currentStudent, 
+                    date: counselingDateInput.value, 
+                    time: currentBookingButton.dataset.time, 
+                    category: counselingCategorySelect.value, 
+                    teacher: counselingTeacherSelect.value, 
+                    status: 'Pending'
+                };
+                bookedAppointments.push(newAppointment);
+                setStoredData('appointments', bookedAppointments);
+                
+                generateTimeSlots(); // Perbarui tampilan slot
+                closeBookingModal();
+                showMessage(`Janji temu dengan **${newAppointment.teacher}** berhasil dipesan! Status: **Pending**. Harap tunggu konfirmasi Admin.`);
+            }
+        }
+        document.getElementById('confirm-booking').addEventListener('click', confirmBooking);
+        document.getElementById('cancel-booking').addEventListener('click', closeBookingModal);
+        bookingModal.addEventListener('click', (e) => { if (e.target === bookingModal) closeBookingModal(); });
+
+        // --- Logika Admin ---
+        function updateBookingStatus(bookingId, newStatus) {
+            const bookingIndex = bookedAppointments.findIndex(b => b.id === bookingId);
+            if (bookingIndex > -1) {
+                bookedAppointments[bookingIndex].status = newStatus;
+                setStoredData('appointments', bookedAppointments);
+                updateAdminDashboard(bookedAppointments); // Perbarui dasbor
+                showMessage(`Janji temu berhasil diubah menjadi **${newStatus === 'Approved' ? 'Disetujui' : 'Ditolak'}**.`);
+            }
+        }
+        window.approveBooking = (id) => updateBookingStatus(id, 'Approved');
+        window.rejectBooking = (id) => updateBookingStatus(id, 'Rejected');
+
+        function deleteBooking(bookingId) {
+            bookedAppointments = bookedAppointments.filter(b => b.id !== bookingId);
+            setStoredData('appointments', bookedAppointments);
+            updateAdminDashboard(bookedAppointments); // Perbarui dasbor
+            showMessage(`Janji temu berhasil dihapus.`);
+        }
+        window.deleteBooking = deleteBooking;
+
+        function updateStudentList(students) {
+            if (!currentAdmin) return;
+            const studentList = document.getElementById('student-list');
+            const noStudentsMsg = document.getElementById('no-students');
+            const studentListTitle = document.getElementById('student-list-title');
+            studentList.innerHTML = '';
+            if (students.length === 0) {
+                noStudentsMsg.classList.remove('hidden');
+                studentListTitle.textContent = `Daftar Siswa Terdaftar (0 Akun)`;
+                return;
+            }
+            noStudentsMsg.classList.add('hidden');
+            studentListTitle.textContent = `Daftar Siswa Terdaftar (${students.length} Akun)`;
+            students.forEach(student => {
+                const studentItem = document.createElement('div');
+                studentItem.className = 'flex justify-between items-center p-3 border-b border-gray-200 last:border-b-0';
+                studentItem.innerHTML = `<span class="text-sm font-medium text-gray-700">${student.id}</span><div class="flex items-center space-x-2"><button onclick="openResetPasswordModal('${student.id}')" title="Reset Password" class="text-blue-400 hover:text-blue-600 transition-colors p-1 rounded-full"><i data-lucide="key-round" class="w-4 h-4"></i></button><button onclick="removeStudent('${student.id}')" title="Hapus Akun" class="text-red-400 hover:text-red-600 transition-colors p-1 rounded-full"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>`;
+                studentList.appendChild(studentItem);
+            });
+            lucide.createIcons();
+        }
+
+        function removeStudent(studentIdToRemove) {
+            // Hapus janji temu siswa
+            bookedAppointments = bookedAppointments.filter(appt => appt.studentId !== studentIdToRemove);
+            setStoredData('appointments', bookedAppointments);
+            
+            // Hapus akun siswa
+            registeredStudents = registeredStudents.filter(s => s.id !== studentIdToRemove);
+            setStoredData('students', registeredStudents);
+
+            // Perbarui UI
+            updateStudentList(registeredStudents);
+            updateAdminDashboard(bookedAppointments);
+            
+            showMessage(`Akun siswa **${studentIdToRemove}** dan semua janji temunya berhasil dihapus.`);
+        }
+        window.removeStudent = removeStudent;
+        
+        document.getElementById('add-student-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = e.target['new-student-id'].value.trim();
+            const password = e.target['new-student-password'].value;
+            if (id === '' || password === '') {
+                 showMessage('ID Siswa dan Password tidak boleh kosong.');
+                 return;
+            }
+            if (registeredStudents.some(s => s.id === id)) {
+                showMessage('ID Siswa sudah terdaftar. Silakan gunakan ID lain.');
+            } else {
+                registeredStudents.push({ id, password });
+                setStoredData('students', registeredStudents);
+                updateStudentList(registeredStudents); // Perbarui daftar siswa
+                showMessage(`Akun siswa **${id}** berhasil dibuat.`);
+                e.target.reset();
+            }
+        });
+        
+        function updateAdminDashboard(appointments) {
+            if (!currentAdmin) return;
+            const bookingList = document.getElementById('booking-list');
+            const noBookingsMsg = document.getElementById('no-bookings');
+            bookingList.innerHTML = '';
+            const adminAppointments = appointments.filter(b => b.teacher === currentAdmin.name);
+            if (adminAppointments.length === 0) {
+                noBookingsMsg.classList.remove('hidden');
+                bookingList.closest('table').classList.add('hidden');
+            } else {
+                noBookingsMsg.classList.add('hidden');
+                bookingList.closest('table').classList.remove('hidden');
+                adminAppointments.sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+                adminAppointments.forEach((booking, index) => { 
+                    let statusClass = 'bg-yellow-100 text-yellow-800', statusText = 'Pending', actionButtons = '';
+                    if (booking.status === 'Approved') {
+                        statusClass = 'bg-green-100 text-green-800'; statusText = 'Disetujui';
+                        actionButtons = `<button onclick="rejectBooking('${booking.id}')" title="Batalkan/Tolak" class="text-red-500 hover:text-red-700 p-1 bg-red-100 rounded-full mr-2"><i data-lucide="x-circle" class="w-4 h-4"></i></button><button onclick="deleteBooking('${booking.id}')" title="Hapus (Selesai)" class="text-gray-500 hover:text-gray-700 p-1 bg-gray-100 rounded-full"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+                    } else if (booking.status === 'Rejected') {
+                        statusClass = 'bg-red-100 text-red-800'; statusText = 'Ditolak';
+                         actionButtons = `<button onclick="deleteBooking('${booking.id}')" title="Hapus" class="text-gray-500 hover:text-gray-700 p-1 bg-gray-100 rounded-full"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+                    } else { // Pending
+                        actionButtons = `<button onclick="approveBooking('${booking.id}')" title="Setujui" class="text-green-500 hover:text-green-700 p-1 bg-green-100 rounded-full mr-2"><i data-lucide="check-circle" class="w-4 h-4"></i></button><button onclick="rejectBooking('${booking.id}')" title="Tolak" class="text-red-500 hover:text-red-700 p-1 bg-red-100 rounded-full"><i data-lucide="x-circle" class="w-4 h-4"></i></button>`;
+                    }
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition-colors';
+                    row.innerHTML = `<td class="py-3 px-4 border-b text-center text-sm font-medium">${index + 1}</td><td class="py-3 px-4 border-b text-sm">${booking.studentId}</td><td class="py-3 px-4 border-b text-sm">${booking.category}</td><td class="py-3 px-4 border-b text-sm font-medium text-green-700">${booking.teacher}</td><td class="py-3 px-4 border-b text-sm">${new Date(booking.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</td><td class="py-3 px-4 border-b text-sm font-medium">${booking.time}</td><td class="py-3 px-4 border-b text-center text-sm"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${statusText}</span></td><td class="py-3 px-4 border-b text-center text-sm whitespace-nowrap">${actionButtons}</td>`;
+                    bookingList.appendChild(row);
+                });
+                lucide.createIcons();
+            }
+        }
+        
+        // --- Logika Form & Autentikasi ---
+        document.getElementById('login-student-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = e.target['student-id-login'].value.trim();
+            const password = e.target['student-password-login'].value;
+            const student = registeredStudents.find(s => s.id === id && s.password === password);
+            if (student) {
+                currentStudent = id;
+                currentAdmin = null;
+                updateUI();
+                showMessage(`Selamat datang kembali, Siswa **${currentStudent}**!`);
+                this.reset();
+            } else {
+                showMessage('ID Siswa atau Password salah. Harap hubungi Admin BK Anda.');
+            }
+        });
+
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const adminId = e.target['admin-id'].value;
+            const password = e.target.password.value;
+            const admin = registeredAdmins.find(a => a.id === adminId && a.password === password);
+            if (admin) {
+                currentAdmin = admin;
+                currentStudent = null;
+                updateUI();
+                updateAdminDashboard(bookedAppointments);
+                updateStudentList(registeredStudents);
+                showMessage(`Login sebagai **${currentAdmin.name}** berhasil!`);
+                this.reset();
+            } else {
+                showMessage('Admin ID atau Password salah.');
+            }
+        });
+
+        function logout() {
+            currentStudent = null;
+            currentAdmin = null;
+            counselingCategorySelect.value = '';
+            counselingTeacherSelect.value = '';
+            counselingDateInput.value = '';
+            updateUI();
+            showMessage('Anda telah berhasil keluar (Logout).');
+        }
+        window.logout = logout;
+
+        // --- Inisialisasi Aplikasi ---
+        function startApp() {
+            updateUI(); 
+            lucide.createIcons();
+        }
+        
+        // Expose functions to global scope for onclick attributes
+        window.showView = showView;
+        window.showMotivation = showMotivation;
+        window.closeMotivationModal = closeMotivationModal;
+        window.selectionChanged = selectionChanged;
+        window.openResetPasswordModal = openResetPasswordModal; 
+        window.closeResetPasswordModal = closeResetPasswordModal;
+
+        startApp();
+
+    </script>
+</body>
+</html>
