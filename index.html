@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Konskuy - Bimbingan Konseling Online (Offline)</title>
+    <title>Aplikasi Konskuy - Bimbingan Konseling Online</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tambahkan library Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -330,7 +332,6 @@
                 </div>
             </div>
 
-
         </main>
         
         <footer class="bg-white mt-12">
@@ -399,25 +400,24 @@
         </div>
     </div>
 
-    <!-- Hapus semua impor dan inisialisasi Firebase -->
     <script>
-        // --- State Management & Data Lokal ---
-        const APP_PREFIX = 'konskuy_'; // Prefix untuk kunci localStorage
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Konfigurasi Supabase ---
+        // !!! PENTING: GANTI DENGAN URL DAN KUNCI API DARI PROYEK SUPABASE ANDA !!!
+        const SUPABASE_URL = 'https://vdgjxmxfxmpfxchcyidz.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkZ2p4bXhmeG1wZnhjaGN5aWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwMjMzOTUsImV4cCI6MjA3NjU5OTM5NX0.23vcAeoQx_FJowKWq45tNdEPaZZK4KTQKBYchR4olBY'; 
+
+        // Cek jika URL dan Kunci belum diganti
+        if (SUPABASE_URL === 'https://vdgjxmxfxmpfxchcyidz.supabase.co' || SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkZ2p4bXhmeG1wZnhjaGN5aWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwMjMzOTUsImV4cCI6MjA3NjU5OTM5NX0.23vcAeoQx_FJowKWq45tNdEPaZZK4KTQKBYchR4olBY') {
+            console.warn("PENTING: Harap buka file HTML ini, cari bagian 'Konfigurasi Supabase', dan ganti 'SUPABASE_URL' serta 'SUPABASE_ANON_KEY' dengan kredensial dari proyek Supabase Anda. Ikuti panduan di file langkah_langkah_supabase.md.");
+        }
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- State Management & Data Lokal (non-database) ---
+        let registeredStudents = []; // Akan diisi dari Supabase
+        let bookedAppointments = []; // Akan diisi dari Supabase
         
-        // Helper functions untuk localStorage
-        const getStoredData = (key) => {
-            const data = localStorage.getItem(APP_PREFIX + key);
-            return data ? JSON.parse(data) : [];
-        };
-
-        const setStoredData = (key, data) => {
-            localStorage.setItem(APP_PREFIX + key, JSON.stringify(data));
-        };
-
-        // Muat data dari localStorage saat aplikasi dimulai
-        let registeredStudents = getStoredData('students');
-        let bookedAppointments = getStoredData('appointments');
-
         const registeredAdmins = [
             { id: 'bk_gofar', password: 'gofar123', name: 'Pak Gofar' },
             { id: 'bk_rohman', password: 'rohman123', name: 'Pak Rohman' }
@@ -425,23 +425,13 @@
         
         let currentStudent = null;
         let currentAdmin = null;
-        
         let targetStudentId = null; 
         
         // --- Data Konten Motivasi (Tidak Berubah) ---
         const motivationContents = {
-            'stres': {
-                title: "5 Cara Efektif Mengatasi Stres Jelang Ujian",
-                content: `<p class="mb-4">Menghadapi ujian seringkali membawa beban stres yang besar...</p><h4>1. Rencanakan dan Bagi Tugas (Chunking)</h4><p class="mb-4">Jangan mencoba belajar semua sekaligus...</p><h4>2. Prioritaskan Tidur Berkualitas</h4><p class="mb-4">Tidur 7-8 jam per malam adalah non-negotiable!...</p><h4>3. Teknik Pernapasan 4-7-8</h4><p class="mb-4">Saat merasa panik, coba teknik ini...</p><h4>4. Bergeraklah (Movement)</h4><p class="mb-4">Luangkan 30 menit sehari untuk aktivitas fisik ringan...</p><h4>5. Hindari Membandingkan Diri</h4><p class="mb-4">Fokus pada kemajuan diri sendiri...</p>`
-            },
-            'percaya_diri': {
-                title: "Membangun Rasa Percaya Diri yang Kuat",
-                content: `<p class="mb-4">Rasa percaya diri bukanlah sesuatu yang didapatkan secara instan...</p><h4>1. Latih Postur Tubuh</h4><p class="mb-4">Bahasa tubuh sangat memengaruhi cara Anda merasa...</p><h4>2. Kenali dan Rayakan Kemenangan Kecil (Small Wins)</h4><p class="mb-4">Buat daftar hal-hal yang telah Anda capai...</p><h4>3. Batasi 'Inner Critic' Negatif</h4><p class="mb-4">Setiap kali Anda mendengar suara di kepala yang mengatakan "Saya tidak bisa,"...</p><h4>4. Persiapan Adalah Kunci</h4><p class="mb-4">Rasa gugup sering muncul karena kurangnya persiapan...</p><h4>5. Ambil Risiko Kecil</h4><p class="mb-4">Sengaja melakukan sesuatu yang sedikit di luar zona nyaman Anda...</p>`
-            },
-            'jurusan_kuliah': {
-                title: "Menentukan Jurusan Kuliah? Ini Tipsnya!",
-                content: `<p class="mb-4">Memilih jurusan kuliah adalah keputusan besar...</p><h4>Pilar 1: Minat (Passion)</h4><p class="mb-4">Apa yang benar-benar Anda nikmati?...</p><h4>Pilar 2: Bakat (Aptitude)</h4><p class="mb-4">Apa yang Anda kuasai secara alami?...</p><h4>Pilar 3: Peluang Karir (Opportunity)</h4><p class="mb-4">Setelah lulus, apakah jurusan ini memiliki prospek kerja yang baik?...</p><h4>Tips Tambahan: Riset Mendalam</h4><p class="mb-4">Lakukan wawancara singkat (informational interview)...</p>`
-            }
+            'stres': { title: "5 Cara Efektif Mengatasi Stres Jelang Ujian", content: `<p class="mb-4">Menghadapi ujian seringkali membawa beban stres yang besar...</p><h4>1. Rencanakan dan Bagi Tugas (Chunking)</h4><p class="mb-4">Jangan mencoba belajar semua sekaligus...</p><h4>2. Prioritaskan Tidur Berkualitas</h4><p class="mb-4">Tidur 7-8 jam per malam adalah non-negotiable!...</p><h4>3. Teknik Pernapasan 4-7-8</h4><p class="mb-4">Saat merasa panik, coba teknik ini...</p><h4>4. Bergeraklah (Movement)</h4><p class="mb-4">Luangkan 30 menit sehari untuk aktivitas fisik ringan...</p><h4>5. Hindari Membandingkan Diri</h4><p class="mb-4">Fokus pada kemajuan diri sendiri...</p>` },
+            'percaya_diri': { title: "Membangun Rasa Percaya Diri yang Kuat", content: `<p class="mb-4">Rasa percaya diri bukanlah sesuatu yang didapatkan secara instan...</p><h4>1. Latih Postur Tubuh</h4><p class="mb-4">Bahasa tubuh sangat memengaruhi cara Anda merasa...</p><h4>2. Kenali dan Rayakan Kemenangan Kecil (Small Wins)</h4><p class="mb-4">Buat daftar hal-hal yang telah Anda capai...</p><h4>3. Batasi 'Inner Critic' Negatif</h4><p class="mb-4">Setiap kali Anda mendengar suara di kepala yang mengatakan "Saya tidak bisa,"...</p><h4>4. Persiapan Adalah Kunci</h4><p class="mb-4">Rasa gugup sering muncul karena kurangnya persiapan...</p><h4>5. Ambil Risiko Kecil</h4><p class="mb-4">Sengaja melakukan sesuatu yang sedikit di luar zona nyaman Anda...</p>` },
+            'jurusan_kuliah': { title: "Menentukan Jurusan Kuliah? Ini Tipsnya!", content: `<p class="mb-4">Memilih jurusan kuliah adalah keputusan besar...</p><h4>Pilar 1: Minat (Passion)</h4><p class="mb-4">Apa yang benar-benar Anda nikmati?...</p><h4>Pilar 2: Bakat (Aptitude)</h4><p class="mb-4">Apa yang Anda kuasai secara alami?...</p><h4>Pilar 3: Peluang Karir (Opportunity)</h4><p class="mb-4">Setelah lulus, apakah jurusan ini memiliki prospek kerja yang baik?...</p><h4>Tips Tambahan: Riset Mendalam</h4><p class="mb-4">Lakukan wawancara singkat (informational interview)...</p>` }
         };
 
         // --- Elemen UI ---
@@ -514,18 +504,22 @@
             resetPasswordModal.classList.add('hidden');
             targetStudentId = null;
         }
-        resetPasswordForm.addEventListener('submit', function(e) {
+        resetPasswordForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             if (!targetStudentId) return;
             const newPassword = e.target['new-password'].value;
-            const studentIndex = registeredStudents.findIndex(s => s.id === targetStudentId);
-            if (studentIndex > -1) {
-                registeredStudents[studentIndex].password = newPassword;
-                setStoredData('students', registeredStudents);
+            const { error } = await supabaseClient
+                .from('students')
+                .update({ password: newPassword })
+                .eq('id', targetStudentId);
+
+            if (error) {
+                console.error("Error resetting password:", error);
+                showMessage("Gagal mereset password, terjadi kesalahan.");
+            } else {
+                await loadStudents();
                 closeResetPasswordModal();
                 showMessage(`Password untuk siswa **${targetStudentId}** berhasil direset.`);
-            } else {
-                showMessage("Gagal mereset password, siswa tidak ditemukan.");
             }
         });
 
@@ -611,7 +605,7 @@
         counselingDateInput.setAttribute('min', today);
         counselingDateInput.addEventListener('change', generateTimeSlots);
 
-        function generateTimeSlots() {
+        async function generateTimeSlots() {
              if (!currentStudent && !currentAdmin) {
                 scheduleGrid.innerHTML = '<p class="text-center col-span-full text-red-500 font-semibold">Anda harus login untuk melihat dan memesan jadwal.</p>';
                 return;
@@ -628,6 +622,10 @@
                  scheduleGrid.innerHTML = '<p class="text-center col-span-full text-gray-500">Silakan pilih **kategori**, **guru**, dan **tanggal** untuk melihat jadwal.</p>';
                  return;
             }
+            
+            // Ambil data janji temu dari Supabase
+            await loadAppointments();
+            
             const bookedTimesForTeacher = bookedAppointments
                 .filter(appt => appt.date === selectedDate && appt.teacher === selectedTeacher && appt.status !== 'Rejected')
                 .map(appt => appt.time);
@@ -636,7 +634,8 @@
             for (let time = startTime; time <= endTime; time += interval) {
                 let hour = Math.floor(time);
                 let minute = (time % 1) * 60;
-                let timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                let timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`; // Format HH:MM:SS
+                
                 const button = document.createElement('button');
                 button.dataset.time = timeString;
                 const isBooked = bookedTimesForTeacher.includes(timeString);
@@ -646,7 +645,7 @@
                     button.className = "p-3 bg-red-500 text-white font-semibold rounded-lg cursor-not-allowed";
                 } else {
                     foundSlots = true;
-                    button.textContent = timeString;
+                    button.textContent = timeString.substring(0, 5); // Tampilkan HH:MM
                     button.className = "p-3 bg-green-100 text-green-800 font-semibold rounded-lg hover:bg-green-200 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500";
                     if (currentStudent) { button.addEventListener('click', () => openBookingModal(button)); }
                 }
@@ -676,17 +675,16 @@
             document.getElementById('modal-category').textContent = selectedCategory;
             document.getElementById('modal-teacher').textContent = selectedTeacher;
             document.getElementById('modal-date').textContent = formattedDate;
-            document.getElementById('modal-time').textContent = button.dataset.time;
+            document.getElementById('modal-time').textContent = button.dataset.time.substring(0, 5);
             bookingModal.classList.remove('hidden');
         }
         function closeBookingModal() {
             currentBookingButton = null;
             bookingModal.classList.add('hidden');
         }
-        function confirmBooking() {
+        async function confirmBooking() {
             if (currentBookingButton) {
                 const newAppointment = { 
-                    id: 'appt_' + Date.now(), // Buat ID unik
                     studentId: currentStudent, 
                     date: counselingDateInput.value, 
                     time: currentBookingButton.dataset.time, 
@@ -694,12 +692,17 @@
                     teacher: counselingTeacherSelect.value, 
                     status: 'Pending'
                 };
-                bookedAppointments.push(newAppointment);
-                setStoredData('appointments', bookedAppointments);
                 
-                generateTimeSlots(); // Perbarui tampilan slot
-                closeBookingModal();
-                showMessage(`Janji temu dengan **${newAppointment.teacher}** berhasil dipesan! Status: **Pending**. Harap tunggu konfirmasi Admin.`);
+                const { error } = await supabaseClient.from('appointments').insert(newAppointment);
+
+                if (error) {
+                    console.error("Error creating appointment:", error);
+                    showMessage("Gagal membuat janji temu. Silakan coba lagi.");
+                } else {
+                    await generateTimeSlots(); 
+                    closeBookingModal();
+                    showMessage(`Janji temu dengan **${newAppointment.teacher}** berhasil dipesan! Status: **Pending**. Harap tunggu konfirmasi Admin.`);
+                }
             }
         }
         document.getElementById('confirm-booking').addEventListener('click', confirmBooking);
@@ -707,23 +710,38 @@
         bookingModal.addEventListener('click', (e) => { if (e.target === bookingModal) closeBookingModal(); });
 
         // --- Logika Admin ---
-        function updateBookingStatus(bookingId, newStatus) {
-            const bookingIndex = bookedAppointments.findIndex(b => b.id === bookingId);
-            if (bookingIndex > -1) {
-                bookedAppointments[bookingIndex].status = newStatus;
-                setStoredData('appointments', bookedAppointments);
-                updateAdminDashboard(bookedAppointments); // Perbarui dasbor
+        async function updateBookingStatus(bookingId, newStatus) {
+            const { error } = await supabaseClient
+                .from('appointments')
+                .update({ status: newStatus })
+                .eq('id', bookingId);
+            
+            if (error) {
+                console.error("Error updating status:", error);
+                showMessage("Gagal mengubah status janji temu.");
+            } else {
+                await loadAppointments();
+                updateAdminDashboard(bookedAppointments);
                 showMessage(`Janji temu berhasil diubah menjadi **${newStatus === 'Approved' ? 'Disetujui' : 'Ditolak'}**.`);
             }
         }
         window.approveBooking = (id) => updateBookingStatus(id, 'Approved');
         window.rejectBooking = (id) => updateBookingStatus(id, 'Rejected');
 
-        function deleteBooking(bookingId) {
-            bookedAppointments = bookedAppointments.filter(b => b.id !== bookingId);
-            setStoredData('appointments', bookedAppointments);
-            updateAdminDashboard(bookedAppointments); // Perbarui dasbor
-            showMessage(`Janji temu berhasil dihapus.`);
+        async function deleteBooking(bookingId) {
+             const { error } = await supabaseClient
+                .from('appointments')
+                .delete()
+                .eq('id', bookingId);
+            
+            if (error) {
+                 console.error("Error deleting booking:", error);
+                 showMessage("Gagal menghapus janji temu.");
+            } else {
+                await loadAppointments();
+                updateAdminDashboard(bookedAppointments);
+                showMessage(`Janji temu berhasil dihapus.`);
+            }
         }
         window.deleteBooking = deleteBooking;
 
@@ -749,16 +767,21 @@
             lucide.createIcons();
         }
 
-        function removeStudent(studentIdToRemove) {
+        async function removeStudent(studentIdToRemove) {
+            // Konfirmasi sebelum menghapus
+            if (!confirm(`Anda yakin ingin menghapus siswa ${studentIdToRemove}? Semua data janji temunya juga akan dihapus.`)) {
+                return;
+            }
             // Hapus janji temu siswa
-            bookedAppointments = bookedAppointments.filter(appt => appt.studentId !== studentIdToRemove);
-            setStoredData('appointments', bookedAppointments);
-            
-            // Hapus akun siswa
-            registeredStudents = registeredStudents.filter(s => s.id !== studentIdToRemove);
-            setStoredData('students', registeredStudents);
+            const { error: apptError } = await supabaseClient.from('appointments').delete().eq('studentId', studentIdToRemove);
+            if (apptError) { console.error("Error deleting appointments:", apptError); showMessage("Gagal menghapus janji temu siswa."); return; }
 
+            // Hapus akun siswa
+            const { error: studentError } = await supabaseClient.from('students').delete().eq('id', studentIdToRemove);
+            if (studentError) { console.error("Error deleting student:", studentError); showMessage("Gagal menghapus akun siswa."); return; }
+            
             // Perbarui UI
+            await loadInitialData();
             updateStudentList(registeredStudents);
             updateAdminDashboard(bookedAppointments);
             
@@ -766,7 +789,7 @@
         }
         window.removeStudent = removeStudent;
         
-        document.getElementById('add-student-form').addEventListener('submit', function(e) {
+        document.getElementById('add-student-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const id = e.target['new-student-id'].value.trim();
             const password = e.target['new-student-password'].value;
@@ -774,12 +797,22 @@
                  showMessage('ID Siswa dan Password tidak boleh kosong.');
                  return;
             }
-            if (registeredStudents.some(s => s.id === id)) {
-                showMessage('ID Siswa sudah terdaftar. Silakan gunakan ID lain.');
+            
+            // Cek apakah ID sudah ada
+            const { data: existingStudent, error: checkError } = await supabaseClient.from('students').select('id').eq('id', id).single();
+            if (existingStudent) {
+                 showMessage('ID Siswa sudah terdaftar. Silakan gunakan ID lain.');
+                 return;
+            }
+            
+            // Tambahkan siswa baru
+            const { error } = await supabaseClient.from('students').insert({ id, password });
+            if (error) {
+                console.error("Error adding student:", error);
+                showMessage("Gagal membuat akun siswa. Terjadi kesalahan.");
             } else {
-                registeredStudents.push({ id, password });
-                setStoredData('students', registeredStudents);
-                updateStudentList(registeredStudents); // Perbarui daftar siswa
+                await loadStudents();
+                updateStudentList(registeredStudents);
                 showMessage(`Akun siswa **${id}** berhasil dibuat.`);
                 e.target.reset();
             }
@@ -811,7 +844,7 @@
                     }
                     const row = document.createElement('tr');
                     row.className = 'hover:bg-gray-50 transition-colors';
-                    row.innerHTML = `<td class="py-3 px-4 border-b text-center text-sm font-medium">${index + 1}</td><td class="py-3 px-4 border-b text-sm">${booking.studentId}</td><td class="py-3 px-4 border-b text-sm">${booking.category}</td><td class="py-3 px-4 border-b text-sm font-medium text-green-700">${booking.teacher}</td><td class="py-3 px-4 border-b text-sm">${new Date(booking.date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</td><td class="py-3 px-4 border-b text-sm font-medium">${booking.time}</td><td class="py-3 px-4 border-b text-center text-sm"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${statusText}</span></td><td class="py-3 px-4 border-b text-center text-sm whitespace-nowrap">${actionButtons}</td>`;
+                    row.innerHTML = `<td class="py-3 px-4 border-b text-center text-sm font-medium">${index + 1}</td><td class="py-3 px-4 border-b text-sm">${booking.studentId}</td><td class="py-3 px-4 border-b text-sm">${booking.category}</td><td class="py-3 px-4 border-b text-sm font-medium text-green-700">${booking.teacher}</td><td class="py-3 px-4 border-b text-sm">${new Date(booking.date + 'T00:00:00').toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}</td><td class="py-3 px-4 border-b text-sm font-medium">${booking.time.substring(0,5)}</td><td class="py-3 px-4 border-b text-center text-sm"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">${statusText}</span></td><td class="py-3 px-4 border-b text-center text-sm whitespace-nowrap">${actionButtons}</td>`;
                     bookingList.appendChild(row);
                 });
                 lucide.createIcons();
@@ -819,13 +852,20 @@
         }
         
         // --- Logika Form & Autentikasi ---
-        document.getElementById('login-student-form').addEventListener('submit', function(e) {
+        document.getElementById('login-student-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const id = e.target['student-id-login'].value.trim();
             const password = e.target['student-password-login'].value;
-            const student = registeredStudents.find(s => s.id === id && s.password === password);
-            if (student) {
-                currentStudent = id;
+            
+            const { data, error } = await supabaseClient
+                .from('students')
+                .select('*')
+                .eq('id', id)
+                .eq('password', password)
+                .single();
+
+            if (data) {
+                currentStudent = data.id;
                 currentAdmin = null;
                 updateUI();
                 showMessage(`Selamat datang kembali, Siswa **${currentStudent}**!`);
@@ -835,7 +875,7 @@
             }
         });
 
-        document.getElementById('login-form').addEventListener('submit', function(e) {
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const adminId = e.target['admin-id'].value;
             const password = e.target.password.value;
@@ -843,6 +883,7 @@
             if (admin) {
                 currentAdmin = admin;
                 currentStudent = null;
+                await loadInitialData();
                 updateUI();
                 updateAdminDashboard(bookedAppointments);
                 updateStudentList(registeredStudents);
@@ -863,9 +904,27 @@
             showMessage('Anda telah berhasil keluar (Logout).');
         }
         window.logout = logout;
+        
+        // --- Fungsi Ambil Data dari Supabase ---
+        async function loadStudents() {
+            const { data, error } = await supabaseClient.from('students').select('*');
+            if (error) console.error("Error loading students:", error);
+            else registeredStudents = data;
+        }
+
+        async function loadAppointments() {
+            const { data, error } = await supabaseClient.from('appointments').select('*');
+            if (error) console.error("Error loading appointments:", error);
+            else bookedAppointments = data;
+        }
+        
+        async function loadInitialData() {
+            await loadStudents();
+            await loadAppointments();
+        }
 
         // --- Inisialisasi Aplikasi ---
-        function startApp() {
+        async function startApp() {
             updateUI(); 
             lucide.createIcons();
         }
@@ -879,7 +938,7 @@
         window.closeResetPasswordModal = closeResetPasswordModal;
 
         startApp();
-
+    });
     </script>
 </body>
 </html>
