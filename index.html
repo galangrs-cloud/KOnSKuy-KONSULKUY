@@ -404,8 +404,8 @@
     document.addEventListener('DOMContentLoaded', () => {
         // --- Konfigurasi Supabase ---
         // !!! PENTING: GANTI DENGAN URL DAN KUNCI API DARI PROYEK SUPABASE ANDA !!!
-        const SUPABASE_URL = 'https://vdgjxmxfxmpfxchcyidz.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkZ2p4bXhmeG1wZnhjaGN5aWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwMjMzOTUsImV4cCI6MjA3NjU5OTM5NX0.23vcAeoQx_FJowKWq45tNdEPaZZK4KTQKBYchR4olBY'; 
+        const SUPABASE_URL ='https://vdgjxmxfxmpfxchcyidz.supabase.co'; 
+        const SUPABASE_ANON_KEY ='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkZ2p4bXhmeG1wZnhjaGN5aWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwMjMzOTUsImV4cCI6MjA3NjU5OTM5NX0.23vcAeoQx_FJowKWq45tNdEPaZZK4KTQKBYchR4olBY'; 
 
         // Cek jika URL dan Kunci belum diganti
         if (SUPABASE_URL === 'https://vdgjxmxfxmpfxchcyidz.supabase.co' || SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkZ2p4bXhmeG1wZnhjaGN5aWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwMjMzOTUsImV4cCI6MjA3NjU5OTM5NX0.23vcAeoQx_FJowKWq45tNdEPaZZK4KTQKBYchR4olBY') {
@@ -799,8 +799,26 @@
             }
             
             // Cek apakah ID sudah ada
-            const { data: existingStudent, error: checkError } = await supabaseClient.from('students').select('id').eq('id', id).single();
-            if (existingStudent) {
+            // --- PERBAIKAN: Hapus .single() ---
+            // .single() akan error jika 0 baris ditemukan, padahal itu yang kita inginkan.
+            const { data: existingStudents, error: checkError } = await supabaseClient
+                .from('students')
+                .select('id')
+                .eq('id', id);
+
+            // Handle error jika terjadi masalah saat mengecek (misal, "Failed to fetch")
+            if (checkError) {
+                // Kita tidak perlu menangani 'PGRST116' sebagai error di sini,
+                // karena itu sudah ditangani oleh logika .single() sebelumnya.
+                // Blok ini sekarang hanya untuk error jaringan/kredensial.
+                console.error("Error checking student:", checkError);
+                showMessage("Gagal mengecek data siswa. Pastikan koneksi dan kredensial Supabase Anda benar.");
+                return;
+            }
+
+            // --- PERBAIKAN: Cek panjang array 'data' ---
+            // Jika data.length > 0, berarti siswa sudah ada.
+            if (existingStudents && existingStudents.length > 0) {
                  showMessage('ID Siswa sudah terdaftar. Silakan gunakan ID lain.');
                  return;
             }
